@@ -23,24 +23,19 @@ function loadEnv() {
 loadEnv()
 
 const app = express(),
-	PORT = process.env.PORT ?? 3001
+	PORT = process.env.PORT ?? 3001,
+	uploadDir = path.join(__dirname, '..', 'media'),
+	tempDir = path.join(__dirname, '..', 'temp')
 
 app.use(cors())
 app.use(express.json())
-
-const uploadDir = path.join(__dirname, '..', 'media')
 app.use('/media', express.static(uploadDir))
 
-fs.mkdir(uploadDir, { recursive: true }, (err) => {
-	if (err) {
-		console.error('Ошибка при создании папки media:', err)
-	} else {
-		console.log('Папка media успешно создана или уже существует.')
-	}
-})
+fs.mkdirSync(uploadDir, { recursive: true })
+fs.mkdirSync(tempDir, { recursive: true })
 
 const storage = multer.diskStorage({
-	destination: (req, file, cb) => cb(null, uploadDir),
+	destination: (req, file, cb) => cb(null, tempDir),
 	filename: (req, file, cb) => cb(null, file.originalname)
 })
 
@@ -54,25 +49,25 @@ app.post('/upload', upload.array('files'), (req, res) => {
 		if (folderPath) {
 			fs.rmdir(fullUploadDir, { recursive: true }, err => {
 				if (err) {
-					res.status(500).json({ error: 'Ошибка при удалении папки' })
+					res.status(500).send('Ошибка при удалении папки')
 				} else {
 					res.json([])
 				}
 			})
 		} else {
-			res.status(400).json({ error: 'folderPath не может быть пустым, если не переданы файлы.' })
+			res.status(400).send('folderPath не может быть пустым, если не переданы файлы.')
 		}
 		return
 	}
 
 	fs.mkdir(fullUploadDir, { recursive: true }, err => {
 		if (err) {
-			return res.status(500).json({ error: 'Ошибка при создании папки' })
+			return res.status(500).send('Ошибка при создании папки')
 		}
 
 		fs.readdir(fullUploadDir, (err, files) => {
 			if (err) {
-				return res.status(500).json({ error: 'Ошибка при чтении папки' })
+				return res.status(500).send('Ошибка при чтении папки')
 			}
 
 			const deletePromises = files.map(file =>
@@ -90,9 +85,10 @@ app.post('/upload', upload.array('files'), (req, res) => {
 			Promise.all(deletePromises)
 				.then(() => {
 					const filePromises = (req.files as Express.Multer.File[]).map((file: Express.Multer.File) => {
-						const filePath = path.join(fullUploadDir, file.originalname)
+						const filePath = path.join(fullUploadDir, file.originalname),
+							tempFilePath = path.join(tempDir, file.originalname)
 						return new Promise<string>((resolve, reject) =>
-							fs.rename(file.path, filePath, err => {
+							fs.rename(tempFilePath, filePath, err => {
 								if (err) {
 									reject(err)
 								} else {
@@ -105,7 +101,7 @@ app.post('/upload', upload.array('files'), (req, res) => {
 					return Promise.all(filePromises)
 				})
 				.then(results => res.json(results))
-				.catch(err => res.status(500).json({ error: 'Ошибка при сохранении файлов' }))
+				.catch(err => res.status(500).send('Ошибка при сохранении файлов'))
 		})
 	})
 })
