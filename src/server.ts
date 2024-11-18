@@ -92,7 +92,7 @@ app.post('/upload', upload.array('files'), (req, res) => {
 								if (err) {
 									reject(err)
 								} else {
-									resolve(`/${folderPath}/${file.originalname}`)
+									resolve(`${folderPath}/${file.originalname}`)
 								}
 							})
 						)
