@@ -4,24 +4,6 @@ import path from 'path'
 import cors from 'cors'
 import fs from 'fs'
 
-function loadEnv() {
-	const envFilePath = path.join(__dirname, '..', '.env')
-	if (fs.existsSync(envFilePath)) {
-		const envFileContent = fs.readFileSync(envFilePath, 'utf-8'),
-			lines = envFileContent.split('\n')
-		lines.forEach(line => {
-			const [key, value] = line.split('=')
-			if (key && value) {
-				process.env[key.trim()] = value.trim()
-			}
-		})
-	} else {
-		console.error('.env файл не найден!')
-	}
-}
-
-loadEnv()
-
 const app = express(),
 	PORT = process.env.PORT ?? 3001,
 	uploadDir = path.join(__dirname, '..', 'media'),
