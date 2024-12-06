@@ -7,7 +7,12 @@ import fs from 'fs'
 const app = express(),
 	PORT = process.env.PORT ?? 3001,
 	uploadDir = path.join(__dirname, '..', 'media'),
-	tempDir = path.join(__dirname, '..', 'temp')
+	tempDir = path.join(__dirname, '..', 'temp'),
+	storage = multer.diskStorage({
+		destination: (req, file, cb) => cb(null, tempDir),
+		filename: (req, file, cb) => cb(null, file.originalname)
+	}),
+	upload = multer({ storage })
 
 app.use(cors())
 app.use(express.json())
@@ -15,13 +20,6 @@ app.use('/media', express.static(uploadDir))
 
 fs.mkdirSync(uploadDir, { recursive: true })
 fs.mkdirSync(tempDir, { recursive: true })
-
-const storage = multer.diskStorage({
-	destination: (req, file, cb) => cb(null, tempDir),
-	filename: (req, file, cb) => cb(null, file.originalname)
-})
-
-const upload = multer({ storage })
 
 app.post('/upload', upload.array('files'), (req, res) => {
 	const folderPath = req.body.folderPath ?? '',
