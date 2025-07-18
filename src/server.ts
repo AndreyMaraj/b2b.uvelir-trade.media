@@ -22,7 +22,7 @@ fs.mkdirSync(uploadDir, { recursive: true })
 fs.mkdirSync(tempDir, { recursive: true })
 
 app.post('/upload', upload.array('files'), (req, res) => {
-	const folderPath = req.body.folderPath ?? '',
+	const folderPath = req.body.folderPath ? decodeURI(req.body.folderPath) : '',
 		fullUploadDir = path.join(uploadDir, folderPath)
 
 	if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
